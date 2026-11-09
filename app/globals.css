@@ -1,26 +1,34 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Shared design tokens. Tailwind v4 turns every --color-* and --font-* variable in
+   @theme into utilities: bg-brand, text-brand, bg-paper, font-heading, font-sans. */
+@theme {
+  --color-brand: #1e3a8a;
+  --color-paper: #faf8f4;
+  --font-sans: var(--font-source-sans), system-ui, sans-serif;
+  --font-heading: var(--font-lora), Georgia, serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  font-size: 17px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: #171717;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+/* Printed programs: white background, black text, no browser-added link underline colours. */
+@media print {
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
 }
