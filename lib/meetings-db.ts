@@ -1,168 +1,226 @@
-import type { SacramentMeeting } from "./types";
+import { neon } from "@neondatabase/serverless";
+import type { NeonQueryFunction } from "@neondatabase/serverless";
+import type {
+  Hymn,
+  MeetingType,
+  SacramentMeeting,
+  SpeakerItem,
+  WardBusinessItem,
+} from "./types";
 
-// Temporary in-memory data for this week. A real database replaces this module later;
-// the API routes only call the functions below, so they won't need to change.
-// All names are fictional sample data. Hymn numbers and titles are sample values:
-// check them against the hymnbook before using the app for real.
-const noSacrament = { number: 0, title: "Not applicable (no sacrament)" };
+export const ITEMS_PER_PAGE = 5;
 
-const meetings: SacramentMeeting[] = [
-  {
-    id: 1,
-    date: "2026-05-03",
-    meetingType: "regular",
-    presiding: "Bishop Smith",
-    conducting: "Brother Jones",
-    announcements: ["Ward temple night: May 10"],
-    openingHymn: { number: 2, title: "The Spirit of God" },
-    openingPrayer: "Sister Williams",
-    wardBusiness: [{ description: "Sustaining of new Primary president" }],
-    stakeBusiness: false,
-    sacramentHymn: { number: 175, title: "In Remembrance of Thy Suffering" },
-    speakers: [
-      { name: "Sister Brown", topic: "Faith in Jesus Christ", type: "speaker" },
-      { name: "Youth Choir", topic: "", type: "musical-number" },
-    ],
-    closingHymn: { number: 31, title: "O God, Our Help in Ages Past" },
-    closingPrayer: "Brother Davis",
-  },
-  {
-    id: 2,
-    date: "2026-10-04",
-    meetingType: "general",
-    presiding: "Bishop Smith",
-    conducting: "Brother Jones",
-    announcements: ["General Conference broadcast begins at 10:00 AM in the chapel"],
-    openingHymn: { number: 19, title: "We Thank Thee, O God, for a Prophet" },
-    openingPrayer: "Brother Adams",
-    wardBusiness: [],
-    stakeBusiness: false,
-    sacramentHymn: noSacrament,
-    speakers: [{ name: "General Conference session", topic: "Watched together as a ward", type: "speaker" }],
-    closingHymn: { number: 27, title: "Praise to the Man" },
-    closingPrayer: "Sister Clark",
-  },
-  {
-    id: 3,
-    date: "2026-10-11",
-    meetingType: "regular",
-    presiding: "Bishop Smith",
-    conducting: "Brother Jones",
-    announcements: ["Ward choir practice Wednesday at 7:00 PM", "Food drive collection in the foyer"],
-    openingHymn: { number: 30, title: "Come, Come, Ye Saints" },
-    openingPrayer: "Sister Taylor",
-    wardBusiness: [{ description: "Release and sustaining of Sunday School teachers" }],
-    stakeBusiness: false,
-    sacramentHymn: { number: 169, title: "As Now We Take the Sacrament" },
-    speakers: [
-      { name: "Brother Lewis", topic: "Gratitude in Daily Life", type: "speaker" },
-      { name: "Sister Moore", topic: "Serving Those Around Us", type: "speaker" },
-      { name: "Primary Children", topic: "Musical number", type: "musical-number" },
-    ],
-    closingHymn: { number: 85, title: "How Firm a Foundation" },
-    closingPrayer: "Brother Hall",
-  },
-  {
-    id: 4,
-    date: "2026-10-18",
-    meetingType: "stake",
-    presiding: "President Allen (Stake President)",
-    conducting: "President Allen",
-    announcements: ["Stake conference: no ward meetings after this session"],
-    openingHymn: { number: 26, title: "Joseph Smith's First Prayer" },
-    openingPrayer: "Sister Young",
-    wardBusiness: [],
-    stakeBusiness: true,
-    sacramentHymn: noSacrament,
-    speakers: [
-      { name: "Stake Presidency", topic: "Strengthening Families", type: "speaker" },
-      { name: "Stake Choir", topic: "Musical number", type: "musical-number" },
-    ],
-    closingHymn: { number: 19, title: "We Thank Thee, O God, for a Prophet" },
-    closingPrayer: "Brother King",
-  },
-  {
-    id: 5,
-    date: "2026-10-25",
-    meetingType: "regular",
-    presiding: "Bishop Smith",
-    conducting: "Brother Jones",
-    announcements: ["Youth service project Saturday at 9:00 AM"],
-    openingHymn: { number: 2, title: "The Spirit of God" },
-    openingPrayer: "Brother Scott",
-    wardBusiness: [{ description: "Sustaining of new ward clerk" }],
-    stakeBusiness: false,
-    sacramentHymn: { number: 193, title: "I Stand All Amazed" },
-    speakers: [
-      { name: "Sister Green", topic: "Hope in Christ", type: "speaker" },
-      { name: "Brother Wright", topic: "Keeping Covenants", type: "speaker" },
-    ],
-    closingHymn: { number: 30, title: "Come, Come, Ye Saints" },
-    closingPrayer: "Sister Baker",
-  },
-  {
-    id: 6,
-    date: "2026-11-01",
-    meetingType: "testimony",
-    presiding: "Bishop Smith",
-    conducting: "Brother Jones",
-    announcements: ["Fast offerings help those in need. Please give generously."],
-    openingHymn: { number: 19, title: "We Thank Thee, O God, for a Prophet" },
-    openingPrayer: "Sister Nelson",
-    wardBusiness: [],
-    stakeBusiness: false,
-    sacramentHymn: { number: 175, title: "In Remembrance of Thy Suffering" },
-    speakers: [
-      { name: "Members of the ward", topic: "Bearing of testimonies", type: "speaker" },
-    ],
-    closingHymn: { number: 85, title: "How Firm a Foundation" },
-    closingPrayer: "Brother Carter",
-  },
-  {
-    id: 7,
-    date: "2026-11-08",
-    meetingType: "regular",
-    presiding: "Bishop Smith",
-    conducting: "Brother Jones",
-    announcements: ["Thanksgiving ward dinner sign-up is open"],
-    openingHymn: { number: 27, title: "Praise to the Man" },
-    openingPrayer: "Brother Phillips",
-    wardBusiness: [{ description: "Sustaining of new Young Women president" }],
-    stakeBusiness: false,
-    sacramentHymn: { number: 169, title: "As Now We Take the Sacrament" },
-    speakers: [
-      { name: "Sister Turner", topic: "The Atonement of Jesus Christ", type: "speaker" },
-      { name: "Ward Choir", topic: "Musical number", type: "musical-number" },
-      { name: "Brother Evans", topic: "Service and Love", type: "speaker" },
-    ],
-    closingHymn: { number: 31, title: "O God, Our Help in Ages Past" },
-    closingPrayer: "Sister Roberts",
-  },
-  {
-    id: 8,
-    date: "2026-11-15",
-    meetingType: "regular",
-    presiding: "Bishop Smith",
-    conducting: "Brother Jones",
-    openingHymn: { number: 26, title: "Joseph Smith's First Prayer" },
-    openingPrayer: "Sister Hughes",
-    wardBusiness: [],
-    stakeBusiness: false,
-    sacramentHymn: { number: 193, title: "I Stand All Amazed" },
-    speakers: [
-      { name: "Brother Collins", topic: "Family History and Temple Work", type: "speaker" },
-      { name: "Sister Reed", topic: "Finding Peace", type: "speaker" },
-    ],
-    closingHymn: { number: 2, title: "The Spirit of God" },
-    closingPrayer: "Brother Foster",
-  },
-];
+// The Neon client is created on first use, so a missing DATABASE_URL gives a clear
+// message when a query runs instead of crashing when the module is imported.
+// <false, false> = the default mode: rows come back as an array of objects.
+let cachedSql: NeonQueryFunction<false, false> | undefined;
 
-export function getMeetings(date?: string | null): SacramentMeeting[] {
-  if (date) return meetings.filter((m) => m.date === date);
-  return meetings;
+function getSql(): NeonQueryFunction<false, false> {
+  if (!cachedSql) {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error("DATABASE_URL is not set. Run `vercel env pull .env.local` and restart.");
+    }
+    cachedSql = neon(databaseUrl);
+  }
+  return cachedSql;
 }
 
-export function getMeetingById(id: number): SacramentMeeting | null {
-  return meetings.find((m) => m.id === id) ?? null;
+// One row exactly as the SELECT below returns it. The AS "camelCase" aliases in the SQL
+// make the column names match the SacramentMeeting fields. JSONB columns arrive already
+// parsed, and TEXT[] arrives as a string[]. Nullable columns can still be null.
+interface MeetingRow {
+  id: number;
+  date: string;
+  meetingType: MeetingType;
+  presiding: string;
+  conducting: string;
+  announcements: string[] | null;
+  openingHymn: Hymn;
+  openingPrayer: string;
+  wardBusiness: WardBusinessItem[] | null;
+  stakeBusiness: boolean | null;
+  sacramentHymn: Hymn;
+  speakers: SpeakerItem[] | null;
+  closingHymn: Hymn;
+  closingPrayer: string;
+}
+
+function toMeeting(row: MeetingRow): SacramentMeeting {
+  return {
+    id: Number(row.id),
+    date: row.date,
+    meetingType: row.meetingType,
+    presiding: row.presiding,
+    conducting: row.conducting,
+    announcements: row.announcements ?? [],
+    openingHymn: row.openingHymn,
+    openingPrayer: row.openingPrayer,
+    wardBusiness: row.wardBusiness ?? [],
+    stakeBusiness: row.stakeBusiness ?? false,
+    sacramentHymn: row.sacramentHymn,
+    speakers: row.speakers ?? [],
+    closingHymn: row.closingHymn,
+    closingPrayer: row.closingPrayer,
+  };
+}
+
+// Turns the user's search text into a LIKE pattern. The text is trimmed, capped at 100
+// characters, and the LIKE wildcards (% and _) and the escape character are escaped, so a
+// search for "50%" matches that text. The value is still sent as a query parameter (${...}
+// in the SQL below), never joined into the SQL text.
+function toLikePattern(query: string): string {
+  const cleaned = query.trim().slice(0, 100).replace(/[\\%_]/g, "\\$&");
+  return `%${cleaned}%`;
+}
+
+// Matches the search against presiding, conducting, meeting type, and each speaker's name
+// or topic. (Searching the whole speakers JSON as text would also match the field names
+// "name", "topic" and "type", so searching "type" would return every meeting.)
+export async function getMeetings(
+  query: string = "",
+  currentPage: number = 1,
+): Promise<SacramentMeeting[]> {
+  const sql = getSql();
+  const searchTerm = toLikePattern(query);
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  const rows = await sql`
+    SELECT
+      id,
+      to_char(date, 'YYYY-MM-DD') AS "date",
+      meeting_type                AS "meetingType",
+      presiding, conducting, announcements,
+      opening_hymn                AS "openingHymn",
+      opening_prayer              AS "openingPrayer",
+      ward_business               AS "wardBusiness",
+      stake_business              AS "stakeBusiness",
+      sacrament_hymn              AS "sacramentHymn",
+      speakers,
+      closing_hymn                AS "closingHymn",
+      closing_prayer              AS "closingPrayer"
+    FROM meetings
+    WHERE
+      presiding ILIKE ${searchTerm}
+      OR conducting ILIKE ${searchTerm}
+      OR meeting_type ILIKE ${searchTerm}
+      OR EXISTS (
+        SELECT 1 FROM jsonb_array_elements(speakers) AS speaker
+        WHERE speaker->>'name' ILIKE ${searchTerm}
+           OR speaker->>'topic' ILIKE ${searchTerm}
+      )
+    ORDER BY date DESC
+    LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
+  `;
+  return (rows as unknown as MeetingRow[]).map(toMeeting);
+}
+
+// How many pages the same search produces (needed for the pagination controls).
+export async function getMeetingsTotalPages(query: string = ""): Promise<number> {
+  const sql = getSql();
+  const searchTerm = toLikePattern(query);
+
+  const rows = await sql`
+    SELECT COUNT(*) AS count FROM meetings
+    WHERE
+      presiding ILIKE ${searchTerm}
+      OR conducting ILIKE ${searchTerm}
+      OR meeting_type ILIKE ${searchTerm}
+      OR EXISTS (
+        SELECT 1 FROM jsonb_array_elements(speakers) AS speaker
+        WHERE speaker->>'name' ILIKE ${searchTerm}
+           OR speaker->>'topic' ILIKE ${searchTerm}
+      )
+  `;
+  return Math.ceil(Number(rows[0].count) / ITEMS_PER_PAGE);
+}
+
+// Every meeting, newest first (used by the API when no filter is given).
+export async function getAllMeetings(): Promise<SacramentMeeting[]> {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT
+      id,
+      to_char(date, 'YYYY-MM-DD') AS "date",
+      meeting_type                AS "meetingType",
+      presiding, conducting, announcements,
+      opening_hymn                AS "openingHymn",
+      opening_prayer              AS "openingPrayer",
+      ward_business               AS "wardBusiness",
+      stake_business              AS "stakeBusiness",
+      sacrament_hymn              AS "sacramentHymn",
+      speakers,
+      closing_hymn                AS "closingHymn",
+      closing_prayer              AS "closingPrayer"
+    FROM meetings
+    ORDER BY date DESC
+  `;
+  return (rows as unknown as MeetingRow[]).map(toMeeting);
+}
+
+// Meetings on one exact date ('YYYY-MM-DD'), used by ?date= and by /meetings/current.
+export async function getMeetingsByDate(date: string): Promise<SacramentMeeting[]> {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT
+      id,
+      to_char(date, 'YYYY-MM-DD') AS "date",
+      meeting_type                AS "meetingType",
+      presiding, conducting, announcements,
+      opening_hymn                AS "openingHymn",
+      opening_prayer              AS "openingPrayer",
+      ward_business               AS "wardBusiness",
+      stake_business              AS "stakeBusiness",
+      sacrament_hymn              AS "sacramentHymn",
+      speakers,
+      closing_hymn                AS "closingHymn",
+      closing_prayer              AS "closingPrayer"
+    FROM meetings
+    WHERE date = ${date}
+    ORDER BY id
+  `;
+  return (rows as unknown as MeetingRow[]).map(toMeeting);
+}
+
+export async function getMeetingById(id: number): Promise<SacramentMeeting | null> {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT
+      id,
+      to_char(date, 'YYYY-MM-DD') AS "date",
+      meeting_type                AS "meetingType",
+      presiding, conducting, announcements,
+      opening_hymn                AS "openingHymn",
+      opening_prayer              AS "openingPrayer",
+      ward_business               AS "wardBusiness",
+      stake_business              AS "stakeBusiness",
+      sacrament_hymn              AS "sacramentHymn",
+      speakers,
+      closing_hymn                AS "closingHymn",
+      closing_prayer              AS "closingPrayer"
+    FROM meetings WHERE id = ${id}
+  `;
+  return rows[0] ? toMeeting(rows[0] as unknown as MeetingRow) : null;
+}
+
+// Mutation stubs. They will be wired to the database in Week 04 when the forms are built.
+export async function addMeeting(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _data: Omit<SacramentMeeting, "id">,
+): Promise<SacramentMeeting> {
+  throw new Error("addMeeting: database implementation coming in Week 04");
+}
+
+export async function updateMeeting(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _id: number,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _updates: Partial<SacramentMeeting>,
+): Promise<SacramentMeeting | null> {
+  throw new Error("updateMeeting: database implementation coming in Week 04");
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function deleteMeeting(_id: number): Promise<boolean> {
+  throw new Error("deleteMeeting: database implementation coming in Week 04");
 }
