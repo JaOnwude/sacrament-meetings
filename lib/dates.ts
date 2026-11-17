@@ -8,11 +8,29 @@ export function toIsoDate(date: Date): string {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
-// Date.getDay() is 0 for Sunday ... 6 for Saturday, so subtracting it rolls back to Sunday.
-export function getMostRecentSunday(now: Date): string {
-  const sunday = new Date(now);
-  sunday.setDate(now.getDate() - now.getDay());
-  return toIsoDate(sunday);
+// The ward's time zone. "Today" is worked out here rather than in the server's
+// time zone (Vercel servers run in UTC), so the current Sunday flips at local
+// midnight. Override with WARD_TIME_ZONE (an IANA name such as "America/Denver").
+export const WARD_TIME_ZONE = process.env.WARD_TIME_ZONE ?? "Africa/Lagos";
+
+// Today's calendar date in the given time zone, as 'YYYY-MM-DD'.
+export function todayInTimeZone(now: Date, timeZone: string = WARD_TIME_ZONE): string {
+  // The en-CA locale formats dates as YYYY-MM-DD.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
+// The most recent Sunday (today, if today is Sunday) in the ward's time zone.
+// The day arithmetic is done in UTC so the server's own time zone can't shift it.
+export function getMostRecentSunday(now: Date, timeZone: string = WARD_TIME_ZONE): string {
+  const today = new Date(`${todayInTimeZone(now, timeZone)}T00:00:00Z`);
+  // getUTCDay() is 0 for Sunday ... 6 for Saturday, so subtracting it rolls back to Sunday.
+  today.setUTCDate(today.getUTCDate() - today.getUTCDay());
+  return today.toISOString().slice(0, 10);
 }
 
 // ISO date strings compare correctly as plain strings.
