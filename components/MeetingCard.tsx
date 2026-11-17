@@ -21,11 +21,11 @@ export default function MeetingCard({ meeting, timing }: MeetingCardProps) {
   return (
     <article className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
       <div className="mb-2 flex items-start justify-between gap-2">
-        <h3 className="font-heading text-lg font-bold text-gray-900">
+        <h2 className="font-heading text-lg font-bold text-gray-900">
           <Link href={`/meetings/${meeting.id}`} className="text-brand hover:underline">
             {formatLongDate(meeting.date)}
           </Link>
-        </h3>
+        </h2>
         {badge && (
           <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${badge.classes}`}>
             {badge.text}

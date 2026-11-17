@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import MeetingDetail from "@/components/MeetingDetail";
 import PrintButton from "@/components/PrintButton";
-import { fetchMeeting } from "@/lib/api";
+import { getMeetingById } from "@/lib/meetings-db";
 
 export default async function MeetingPage({
   params,
@@ -15,7 +15,7 @@ export default async function MeetingPage({
   // Not a positive whole number: there can't be such a meeting.
   if (!Number.isInteger(numericId) || numericId < 1) notFound();
 
-  const meeting = await fetchMeeting(numericId);
+  const meeting = await getMeetingById(numericId);
   if (!meeting) notFound();
 
   return (

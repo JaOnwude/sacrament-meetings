@@ -18,7 +18,7 @@ export async function GET(
     return Response.json(body, { status: 400 });
   }
 
-  const meeting = getMeetingById(numericId);
+  const meeting = await getMeetingById(numericId);
   if (!meeting) {
     const body: ApiErrorBody = { error: "Meeting not found" };
     return Response.json(body, { status: 404 });
