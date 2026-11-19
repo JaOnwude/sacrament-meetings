@@ -17,7 +17,15 @@ interface SearchParams {
 export default function MeetingsPage(props: { searchParams?: Promise<SearchParams> }) {
   return (
     <main>
-      <h1 className="font-heading text-3xl font-bold text-gray-900">Meetings</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-heading text-3xl font-bold text-gray-900">Meetings</h1>
+        <Link
+          href="/meetings/new"
+          className="rounded bg-brand px-4 py-2 font-semibold text-white hover:bg-blue-800"
+        >
+          Plan a new meeting
+        </Link>
+      </div>
       {/* useSearchParams() needs a Suspense boundary above it */}
       <div className="mt-4">
         <Suspense fallback={<div aria-hidden="true" className="h-16 max-w-md animate-pulse rounded bg-gray-200" />}>
