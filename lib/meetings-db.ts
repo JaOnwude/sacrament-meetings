@@ -203,24 +203,66 @@ export async function getMeetingById(id: number): Promise<SacramentMeeting | nul
   return rows[0] ? toMeeting(rows[0] as unknown as MeetingRow) : null;
 }
 
-// Mutation stubs. They will be wired to the database in Week 04 when the forms are built.
-export async function addMeeting(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _data: Omit<SacramentMeeting, "id">,
-): Promise<SacramentMeeting> {
-  throw new Error("addMeeting: database implementation coming in Week 04");
+// ---- Mutations (used by the Server Actions in lib/actions.ts) ----
+// Every value goes in as a query parameter (${...}). The JSON objects are sent as text and
+// cast with ::jsonb; the announcements array is cast to text[] by the column type.
+
+export async function addMeeting(data: Omit<SacramentMeeting, "id">): Promise<SacramentMeeting> {
+  const sql = getSql();
+  const rows = await sql`
+    INSERT INTO meetings (
+      date, meeting_type, presiding, conducting, announcements,
+      opening_hymn, opening_prayer, ward_business, stake_business,
+      sacrament_hymn, speakers, closing_hymn, closing_prayer
+    ) VALUES (
+      ${data.date}, ${data.meetingType}, ${data.presiding}, ${data.conducting},
+      ${data.announcements ?? []},
+      ${JSON.stringify(data.openingHymn)}::jsonb, ${data.openingPrayer},
+      ${JSON.stringify(data.wardBusiness)}::jsonb, ${data.stakeBusiness},
+      ${JSON.stringify(data.sacramentHymn)}::jsonb, ${JSON.stringify(data.speakers)}::jsonb,
+      ${JSON.stringify(data.closingHymn)}::jsonb, ${data.closingPrayer}
+    )
+    RETURNING id
+  `;
+  const created = await getMeetingById(Number(rows[0].id));
+  if (!created) throw new Error("addMeeting: the new meeting could not be read back");
+  return created;
 }
 
+// Replaces every editable column with the merged values. Returns null if the id doesn't exist.
 export async function updateMeeting(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _id: number,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _updates: Partial<SacramentMeeting>,
+  id: number,
+  updates: Partial<SacramentMeeting>,
 ): Promise<SacramentMeeting | null> {
-  throw new Error("updateMeeting: database implementation coming in Week 04");
+  const existing = await getMeetingById(id);
+  if (!existing) return null;
+  const merged: SacramentMeeting = { ...existing, ...updates, id };
+
+  const sql = getSql();
+  const rows = await sql`
+    UPDATE meetings SET
+      date = ${merged.date},
+      meeting_type = ${merged.meetingType},
+      presiding = ${merged.presiding},
+      conducting = ${merged.conducting},
+      announcements = ${merged.announcements ?? []},
+      opening_hymn = ${JSON.stringify(merged.openingHymn)}::jsonb,
+      opening_prayer = ${merged.openingPrayer},
+      ward_business = ${JSON.stringify(merged.wardBusiness)}::jsonb,
+      stake_business = ${merged.stakeBusiness},
+      sacrament_hymn = ${JSON.stringify(merged.sacramentHymn)}::jsonb,
+      speakers = ${JSON.stringify(merged.speakers)}::jsonb,
+      closing_hymn = ${JSON.stringify(merged.closingHymn)}::jsonb,
+      closing_prayer = ${merged.closingPrayer}
+    WHERE id = ${id}
+    RETURNING id
+  `;
+  return rows[0] ? await getMeetingById(id) : null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function deleteMeeting(_id: number): Promise<boolean> {
-  throw new Error("deleteMeeting: database implementation coming in Week 04");
+// Returns true if a row was deleted.
+export async function deleteMeeting(id: number): Promise<boolean> {
+  const sql = getSql();
+  const rows = await sql`DELETE FROM meetings WHERE id = ${id} RETURNING id`;
+  return rows.length > 0;
 }
