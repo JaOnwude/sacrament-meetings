@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { auth } from "@/auth";
 import MeetingForm from "@/components/MeetingForm";
 import { updateMeeting } from "@/lib/actions";
 import { getMeetingById } from "@/lib/meetings-db";
 import { meetingToFormValues } from "@/lib/meeting-form-values";
 
-export const metadata: Metadata = { title: "Edit Meeting" };
+export const metadata: Metadata = {
+  title: "Edit Meeting",
+  description: "Change the program for a sacrament meeting.",
+  robots: { index: false, follow: false },
+};
 
 export default async function EditMeetingPage({
   params,
@@ -13,6 +18,11 @@ export default async function EditMeetingPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  // The proxy has already sent visitors to /login; this is a second check in case it is bypassed.
+  const session = await auth();
+  if (!session?.user) redirect(`/login?callbackUrl=${encodeURIComponent(`/meetings/${id}/edit`)}`);
+
   const numericId = Number(id);
 
   // Not a positive whole number, or no such meeting: show not-found.tsx (next to this file).

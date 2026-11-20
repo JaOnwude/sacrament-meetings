@@ -1,6 +1,9 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { connection } from "next/server";
 import SiteNav from "./SiteNav";
+import { auth } from "@/auth";
+import { signOutAction } from "@/lib/auth-actions";
 import { formatLongDate, toIsoDate } from "@/lib/dates";
 
 const navLinks = [
@@ -18,6 +21,34 @@ async function CurrentDate() {
   return <time dateTime={today}>{formatLongDate(today)}</time>;
 }
 
+// Reads the session (a cookie), so it is also request-time and sits inside Suspense.
+// connection() first: Auth.js generates random values, which Next.js won't allow while
+// pre-building the page.
+async function AuthControls() {
+  await connection();
+  const session = await auth();
+
+  if (!session?.user) {
+    return (
+      <Link href="/login" className="rounded border border-white px-3 py-1 text-sm font-semibold hover:bg-blue-800">
+        Sign in
+      </Link>
+    );
+  }
+
+  return (
+    <form action={signOutAction} className="flex items-center gap-3">
+      <span className="text-sm text-blue-100">Signed in as {session.user.name}</span>
+      <button
+        type="submit"
+        className="rounded border border-white px-3 py-1 text-sm font-semibold hover:bg-blue-800"
+      >
+        Sign out
+      </button>
+    </form>
+  );
+}
+
 export default function Header() {
   return (
     <header className="bg-brand text-white print:hidden">
@@ -30,7 +61,12 @@ export default function Header() {
             </Suspense>
           </p>
         </div>
-        <SiteNav links={navLinks} label="Main navigation" />
+        <div className="flex flex-col gap-2 sm:items-end">
+          <SiteNav links={navLinks} label="Main navigation" />
+          <Suspense fallback={<span aria-hidden="true">&nbsp;</span>}>
+            <AuthControls />
+          </Suspense>
+        </div>
       </div>
     </header>
   );

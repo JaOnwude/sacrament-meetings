@@ -17,12 +17,29 @@ const lora = Lora({
   subsets: ["latin"],
 });
 
+// The address used to turn relative metadata URLs (like the Open Graph image) into full ones.
+// On Vercel it is the production domain; locally it is localhost.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
+
+// Site-wide defaults. A page can set its own title (the template adds the site name) and
+// description. app/opengraph-image.png is picked up automatically as the share preview image.
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "Sacrament Meeting Planner",
+    default: "Sacrament Meeting Planner | Maple Grove Ward",
     template: "%s | Sacrament Meeting Planner",
   },
   description: "Plan, view and print sacrament meeting programs for Maple Grove Ward.",
+  openGraph: {
+    siteName: "Sacrament Meeting Planner",
+    type: "website",
+    title: "Sacrament Meeting Planner",
+    description: "Plan, view and print sacrament meeting programs for Maple Grove Ward.",
+  },
 };
 
 export default function RootLayout({

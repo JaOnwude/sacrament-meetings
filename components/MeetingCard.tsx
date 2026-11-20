@@ -9,6 +9,8 @@ import DeleteMeetingButton from "./DeleteMeetingButton";
 interface MeetingCardProps {
   meeting: SacramentMeeting;
   timing: MeetingTiming;
+  // Edit and Delete are shown only to a signed-in leader.
+  canEdit?: boolean;
 }
 
 const timingBadge: Record<MeetingTiming, { text: string; classes: string } | null> = {
@@ -17,7 +19,7 @@ const timingBadge: Record<MeetingTiming, { text: string; classes: string } | nul
   past: null,
 };
 
-export default function MeetingCard({ meeting, timing }: MeetingCardProps) {
+export default function MeetingCard({ meeting, timing, canEdit = false }: MeetingCardProps) {
   const badge = timingBadge[timing];
   const longDate = formatLongDate(meeting.date);
 
@@ -40,19 +42,21 @@ export default function MeetingCard({ meeting, timing }: MeetingCardProps) {
       <p className="text-sm text-gray-700">
         {meeting.speakers.length} speaker or musical item{meeting.speakers.length === 1 ? "" : "s"}
       </p>
-      <div className="mt-3 flex items-center gap-3">
-        <Link
-          href={`/meetings/${meeting.id}/edit`}
-          aria-label={`Edit the meeting on ${longDate}`}
-          className="rounded border border-brand px-3 py-1 text-sm font-semibold text-brand hover:bg-blue-50"
-        >
-          Edit
-        </Link>
-        <DeleteMeetingButton
-          action={deleteMeeting.bind(null, meeting.id)}
-          meetingLabel={`the meeting on ${longDate}`}
-        />
-      </div>
+      {canEdit && (
+        <div className="mt-3 flex items-center gap-3">
+          <Link
+            href={`/meetings/${meeting.id}/edit`}
+            aria-label={`Edit the meeting on ${longDate}`}
+            className="rounded border border-brand px-3 py-1 text-sm font-semibold text-brand hover:bg-blue-50"
+          >
+            Edit
+          </Link>
+          <DeleteMeetingButton
+            action={deleteMeeting.bind(null, meeting.id)}
+            meetingLabel={`the meeting on ${longDate}`}
+          />
+        </div>
+      )}
     </article>
   );
 }

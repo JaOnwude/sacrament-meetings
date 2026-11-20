@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { connection } from "next/server";
+import { auth } from "@/auth";
 import MeetingCard from "@/components/MeetingCard";
 import MeetingSearch from "@/components/MeetingSearch";
 import Pagination from "@/components/Pagination";
@@ -19,12 +21,9 @@ export default function MeetingsPage(props: { searchParams?: Promise<SearchParam
     <main>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-3xl font-bold text-gray-900">Meetings</h1>
-        <Link
-          href="/meetings/new"
-          className="rounded bg-brand px-4 py-2 font-semibold text-white hover:bg-blue-800"
-        >
-          Plan a new meeting
-        </Link>
+        <Suspense fallback={null}>
+          <PlanMeetingLink />
+        </Suspense>
       </div>
       {/* useSearchParams() needs a Suspense boundary above it */}
       <div className="mt-4">
@@ -42,8 +41,25 @@ export default function MeetingsPage(props: { searchParams?: Promise<SearchParam
   );
 }
 
+// Only a signed-in leader sees the link to plan a meeting.
+async function PlanMeetingLink() {
+  await connection(); // the session is per request
+  const session = await auth();
+  if (!session?.user) return null;
+  return (
+    <Link
+      href="/meetings/new"
+      className="rounded bg-brand px-4 py-2 font-semibold text-white hover:bg-blue-800"
+    >
+      Plan a new meeting
+    </Link>
+  );
+}
+
 async function Results({ searchParams }: { searchParams?: Promise<SearchParams> }) {
   const params = await searchParams;
+  const session = await auth();
+  const canEdit = Boolean(session?.user);
   const query = (params?.query ?? "").trim().slice(0, 100);
   const parsedPage = Math.floor(Number(params?.page));
   const currentPage = parsedPage >= 1 ? parsedPage : 1;
@@ -84,7 +100,11 @@ async function Results({ searchParams }: { searchParams?: Promise<SearchParams> 
       <ul className="grid gap-4 sm:grid-cols-2">
         {meetings.map((meeting) => (
           <li key={meeting.id}>
-            <MeetingCard meeting={meeting} timing={getTiming(meeting.date, currentSunday)} />
+            <MeetingCard
+              meeting={meeting}
+              timing={getTiming(meeting.date, currentSunday)}
+              canEdit={canEdit}
+            />
           </li>
         ))}
       </ul>
