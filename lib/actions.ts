@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import {
   addMeeting,
   updateMeeting as updateMeetingRecord,
@@ -165,10 +166,19 @@ function isUniqueViolation(error: unknown): boolean {
 
 const DUPLICATE_DATE: State["errors"] = { date: ["A meeting is already planned for this date."] };
 
+// Every write needs a signed-in leader. The proxy already keeps visitors off the form pages,
+// but a Server Action is just a public endpoint, so it checks the session itself and never
+// trusts the client. (redirect() works by throwing, so nothing after it runs.)
+async function requireSession(): Promise<void> {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+}
+
 export async function createMeeting(
   prevState: State,
   formData: FormData,
 ): Promise<State> {
+  await requireSession();
   const values = readValues(formData);
   const validated = MeetingFormSchema.safeParse(values);
   if (!validated.success) {
@@ -201,6 +211,7 @@ export async function updateMeeting(
   prevState: State,
   formData: FormData,
 ): Promise<State> {
+  await requireSession();
   const values = readValues(formData);
   const validated = MeetingFormSchema.safeParse(values);
   if (!validated.success) {
@@ -231,6 +242,7 @@ export async function updateMeeting(
 }
 
 export async function deleteMeeting(id: number): Promise<void> {
+  await requireSession();
   try {
     await deleteMeetingRecord(id);
   } catch (error) {
